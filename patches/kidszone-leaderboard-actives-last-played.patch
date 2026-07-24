@@ -1,0 +1,197 @@
+From dc00e4be5d77697824a20924d01f834c259ea216 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Fri, 24 Jul 2026 19:23:41 +0000
+Subject: [PATCH] Show actives on leaderboard and sort by last played first
+
+- Add Actives column to weekly leaderboard table (desktop and mobile)
+- Move Last played to the first data column after learner name
+- Sort leaderboard entries by most recent last played date, then actives
+  and other tie-breakers for weekly; monthly uses last played then points
+---
+ src/app/api/leaderboard/public/route.ts   | 29 +++++-----
+ src/app/leaderboard/LeaderboardClient.tsx | 66 +++++++++++++++--------
+ 2 files changed, 59 insertions(+), 36 deletions(-)
+
+diff --git a/src/app/api/leaderboard/public/route.ts b/src/app/api/leaderboard/public/route.ts
+index d37db90..c054a65 100644
+--- a/src/app/api/leaderboard/public/route.ts
++++ b/src/app/api/leaderboard/public/route.ts
+@@ -241,19 +241,30 @@ export async function GET(req: Request) {
+       winnerTick: winnerTickByUser.has(String(entry.uid)),
+     }));
+ 
++    const compareLastPlayedDesc = (a: any, b: any) => {
++      const aDate = parseDateOnlyUtc(a.lastPlayedDate);
++      const bDate = parseDateOnlyUtc(b.lastPlayedDate);
++      if (aDate !== null && bDate !== null && aDate !== bDate) return bDate - aDate;
++      if (aDate === null && bDate !== null) return 1;
++      if (aDate !== null && bDate === null) return -1;
++      return 0;
++    };
++
+     entriesWithFlags.sort((a: any, b: any) => {
++      const byLastPlayed = compareLastPlayedDesc(a, b);
++      if (byLastPlayed !== 0) return byLastPlayed;
++
+       if (isMonthly) {
+         const aMonthly = Number(a.monthlyPoints || 0);
+         const bMonthly = Number(b.monthlyPoints || 0);
+         if (aMonthly !== bMonthly) return bMonthly - aMonthly;
+-
+-        const aDate = parseDateOnlyUtc(a.lastPlayedDate);
+-        const bDate = parseDateOnlyUtc(b.lastPlayedDate);
+-        if (aDate !== null && bDate !== null && aDate !== bDate) return bDate - aDate;
+-
+         return String(a.name || '').localeCompare(String(b.name || ''));
+       }
+ 
++      const aActives = Number(a.weeklyActivityCount || 0);
++      const bActives = Number(b.weeklyActivityCount || 0);
++      if (aActives !== bActives) return bActives - aActives;
++
+       const aScore = Number(a.weeklyScore || 0);
+       const bScore = Number(b.weeklyScore || 0);
+       if (aScore !== bScore) return bScore - aScore;
+@@ -262,14 +273,6 @@ export async function GET(req: Request) {
+       const bDraw = Boolean(b.drawEligible);
+       if (aDraw !== bDraw) return aDraw ? -1 : 1;
+ 
+-      const aDate = parseDateOnlyUtc(a.lastPlayedDate);
+-      const bDate = parseDateOnlyUtc(b.lastPlayedDate);
+-      if (aDate !== null && bDate !== null && aDate !== bDate) {
+-        return bDate - aDate;
+-      }
+-      if (aDate === null && bDate !== null) return 1;
+-      if (aDate !== null && bDate === null) return -1;
+-
+       const aWeeklyPoints = Number(a.weeklyPoints || 0);
+       const bWeeklyPoints = Number(b.weeklyPoints || 0);
+       if (aWeeklyPoints !== bWeeklyPoints) return bWeeklyPoints - aWeeklyPoints;
+diff --git a/src/app/leaderboard/LeaderboardClient.tsx b/src/app/leaderboard/LeaderboardClient.tsx
+index 6ba8996..1b2da8c 100644
+--- a/src/app/leaderboard/LeaderboardClient.tsx
++++ b/src/app/leaderboard/LeaderboardClient.tsx
+@@ -367,23 +367,25 @@ export default function LeaderboardClient() {
+               <h2 className="text-xl font-bold">{isMonthly ? 'Monthly Rankings' : 'Weekly Rankings'}</h2>
+               <p className="text-sm text-white/80">
+                 {isMonthly
+-                  ? 'Sorted by total points earned this month'
+-                  : `Sorted by activity. Draw entry needs above ${WEEKLY_DRAW_MIN_POINTS} points — winners are random, not by rank.`}
++                  ? 'Sorted by most recent play, then monthly points'
++                  : `Sorted by most recent play, then actives. Draw entry needs above ${WEEKLY_DRAW_MIN_POINTS} points — winners are random, not by rank.`}
+               </p>
+             </div>
+ 
+             <div
+               className={`hidden gap-3 border-b border-[#c4b5fd]/20 bg-[#f5f3ff] px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#6d28d9] sm:grid ${
+                 isMonthly
+-                  ? 'grid-cols-[2rem_2.5rem_1fr_5rem_5.5rem]'
+-                  : 'grid-cols-[2rem_2.5rem_1fr_4rem_4rem_4rem_5.5rem]'
++                  ? 'grid-cols-[2rem_2.5rem_1fr_5.5rem_5rem]'
++                  : 'grid-cols-[2rem_2.5rem_1fr_5.5rem_4rem_4rem_4rem_4rem]'
+               }`}
+             >
+               <span>#</span>
+               <span />
+               <span>Learner</span>
++              <span className="text-right">Last played</span>
+               {!isMonthly ? (
+                 <>
++                  <span className="text-right">Actives</span>
+                   <span className="text-right">Days</span>
+                   <span className="text-right">Week pts</span>
+                   <span className="text-right">Today</span>
+@@ -391,7 +393,6 @@ export default function LeaderboardClient() {
+               ) : (
+                 <span className="text-right">Month pts</span>
+               )}
+-              <span className="text-right">Last played</span>
+             </div>
+ 
+             <div className="divide-y divide-[#c4b5fd]/20">
+@@ -462,8 +463,16 @@ export default function LeaderboardClient() {
+                         ) : null}
+                       </div>
+ 
++                      <div className="hidden w-[5.5rem] shrink-0 text-right sm:block">
++                        <p className="text-xs font-semibold text-[#475569]">
++                          {formatPlayedDate(entry.lastPlayedDate) || '—'}
++                        </p>
++                      </div>
+                       {!isMonthly ? (
+                         <>
++                          <div className="hidden w-16 shrink-0 text-right sm:block">
++                            <p className="font-bold text-[#0d9488]">{entry.activityCount}</p>
++                          </div>
+                           <div className="hidden w-16 shrink-0 text-right sm:block">
+                             <p className="font-bold text-[#7c3aed]">
+                               {entry.weeklyScore}/{entry.maxWeeklyScore}
+@@ -483,23 +492,40 @@ export default function LeaderboardClient() {
+                           <p className="text-lg font-black text-[#7c3aed]">{entry.monthlyPoints}</p>
+                         </div>
+                       )}
+-                      <div className="hidden w-[5.5rem] shrink-0 text-right sm:block">
+-                        <p className="text-xs font-semibold text-[#475569]">
+-                          {formatPlayedDate(entry.lastPlayedDate) || '—'}
+-                        </p>
+-                      </div>
+                     </div>
+ 
+-                    <div className={`mt-3 grid gap-2 sm:hidden ${isMonthly ? 'grid-cols-1' : 'grid-cols-3'}`}>
++                    <div className={`mt-3 grid gap-2 sm:hidden ${isMonthly ? 'grid-cols-2' : 'grid-cols-4'}`}>
+                       {isMonthly ? (
+-                        <div className="rounded-xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-center">
+-                          <p className="text-lg font-bold text-[#7c3aed]">{entry.monthlyPoints}</p>
+-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">
+-                            Month pts
+-                          </p>
+-                        </div>
++                        <>
++                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2.5 text-center">
++                            <p className="text-sm font-bold text-[#475569]">
++                              {formatPlayedDate(entry.lastPlayedDate) || '—'}
++                            </p>
++                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#64748b]">
++                              Last played
++                            </p>
++                          </div>
++                          <div className="rounded-xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-center">
++                            <p className="text-lg font-bold text-[#7c3aed]">{entry.monthlyPoints}</p>
++                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">
++                              Month pts
++                            </p>
++                          </div>
++                        </>
+                       ) : (
+                         <>
++                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2.5 text-center">
++                            <p className="text-sm font-bold text-[#475569]">
++                              {formatPlayedDate(entry.lastPlayedDate) || '—'}
++                            </p>
++                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#64748b]">
++                              Last played
++                            </p>
++                          </div>
++                          <div className="rounded-xl border border-teal-200 bg-teal-50 px-2 py-2.5 text-center">
++                            <p className="text-lg font-bold text-[#0d9488]">{entry.activityCount}</p>
++                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#0f766e]">Actives</p>
++                          </div>
+                           <div className="rounded-xl border border-[#c4b5fd]/30 bg-[#f5f3ff] px-2 py-2.5 text-center">
+                             <p className="text-lg font-bold text-[#7c3aed]">
+                               {entry.weeklyScore}/{entry.maxWeeklyScore}
+@@ -510,12 +536,6 @@ export default function LeaderboardClient() {
+                             <p className="text-lg font-bold text-[#f59e0b]">{entry.weeklyPoints}</p>
+                             <p className="text-[10px] font-semibold uppercase tracking-wide text-[#475569]">Week</p>
+                           </div>
+-                          <div className="rounded-xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-center">
+-                            <p className="text-lg font-bold text-[#6d28d9]">
+-                              {entry.todayPoints}/{POINTS_DAILY_CAP}
+-                            </p>
+-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">Today</p>
+-                          </div>
+                         </>
+                       )}
+                     </div>
+-- 
+2.43.0
+
