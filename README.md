@@ -22,6 +22,18 @@ The live app at `traeadvert8pia.vercel.app` must be connected to this repository
 3. Set **Root Directory** to `.` and leave **Build Command** empty (static site)
 4. Deploy from the `main` branch
 
+### GitHub Actions deploy (recommended)
+
+This repo includes `.github/workflows/vercel-deploy.yml`, which deploys `main` to Vercel on every push.
+
+Add these repository secrets in GitHub (**Settings → Secrets and variables → Actions**):
+
+- `VERCEL_TOKEN` — create at [vercel.com/account/tokens](https://vercel.com/account/tokens)
+- `VERCEL_ORG_ID` — from Vercel project settings
+- `VERCEL_PROJECT_ID` — from Vercel project settings
+
+After secrets are set, push to `main` or run the **Deploy to Vercel** workflow manually.
+
 After deploy, confirm `index.html` includes:
 
 ```html
