@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "patch": "node scripts/patch-bundle.mjs",
-    "test:url": "node --test tests/externalUrl.test.js"
+    "patch": "node scripts/patch-bundle.mjs && node scripts/patch-leaderboard.mjs",
+    "test:url": "node --test tests/externalUrl.test.js",
+    "test:leaderboard": "node --test tests/leaderboard.test.js"
   }
 }
