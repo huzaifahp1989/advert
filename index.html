@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AdvertApp</title>
+    <script>
+      (function () {
+        if (window.__advertSafeOpenPatched) return;
+        var originalOpen = window.open.bind(window);
+        function resolveOpenableUrl(raw) {
+          var value = String(raw || "").trim();
+          if (!value || value === "#" || value === "https:/#" || value === "http:/#") {
+            return null;
+          }
+          try {
+            var parsed = new URL(value, window.location.origin);
+            if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+            if (!parsed.hostname) return null;
+            return parsed.toString();
+          } catch (error) {
+            return null;
+          }
+        }
+        window.open = function (url, target, features) {
+          var candidate = url == null ? "" : String(url);
+          var safeUrl = resolveOpenableUrl(candidate);
+          if (!safeUrl) {
+            if (candidate) {
+              console.warn("Blocked invalid window.open URL:", candidate);
+            }
+            return null;
+          }
+          return originalOpen(safeUrl, target, features);
+        };
+        window.__advertSafeOpenPatched = true;
+      })();
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SGXEJEH2W2"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-SGXEJEH2W2");
+    </script>
+    <script type="module" crossorigin src="/assets/index-DvXX5t7H.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Dj2UE8Qg.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
