@@ -27,6 +27,27 @@ source = source
   .replaceAll('m.websiteUrl||m.link||"#"', '__resolveExternalUrl(m.websiteUrl||m.link)')
   .replaceAll('href:E||"#"', 'href:__resolveExternalUrl(E)');
 
+// If a listing link is a placeholder (https://#), open fails — fall through to ad preview.
+const previewFallthrough = [
+  [
+    'if(A&&A!=="#"){__openExternalUrl(A,"_blank");return}s?.(x.id)',
+    'if(A&&A!=="#"&&__openExternalUrl(A,"_blank"))return;s?.(x.id)',
+  ],
+  [
+    'if(f&&f!=="#"){__openExternalUrl(f,"_blank");return}s?.(d.id)',
+    'if(f&&f!=="#"&&__openExternalUrl(f,"_blank"))return;s?.(d.id)',
+  ],
+];
+for (const [from, to] of previewFallthrough) {
+  if (source.includes(to)) continue;
+  if (source.includes(from)) {
+    source = source.replaceAll(from, to);
+    console.log("Applied preview fallthrough patch");
+  } else {
+    console.warn("Could not locate preview fallthrough pattern:", from);
+  }
+}
+
 // Soften the root error boundary so invalid window.open errors do not blank the app.
 const originalHandler =
   'handleWindowError=e=>{const t=e.error instanceof Error?`${e.error.name}: ${e.error.message}`:e.message||"Unknown runtime error";this.setState({errorMessage:t})}';

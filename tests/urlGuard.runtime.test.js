@@ -60,3 +60,19 @@ test("index.html inlines bootstrap url guard", () => {
   assert.match(html, /Ignored invalid window\.open error/);
   assert.match(html, /window\.__openExternalUrl/);
 });
+
+test("bundle falls through to ad preview when external open fails", () => {
+  const source = fs.readFileSync(path.join(rootDir, "assets/index-DvXX5t7H.js"), "utf8");
+  assert.match(
+    source,
+    /if\(A&&A!=="#"&&__openExternalUrl\(A,"_blank"\)\)return;s\?\.\(x\.id\)/
+  );
+  assert.match(
+    source,
+    /if\(f&&f!=="#"&&__openExternalUrl\(f,"_blank"\)\)return;s\?\.\(d\.id\)/
+  );
+  assert.doesNotMatch(
+    source,
+    /if\(A&&A!=="#"\)\{__openExternalUrl\(A,"_blank"\);return\}s\?\.\(x\.id\)/
+  );
+});
