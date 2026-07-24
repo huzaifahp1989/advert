@@ -52,6 +52,8 @@ test("bundle soft-fails invalid window.open errors", () => {
   assert.match(source, /Ignored invalid window\.open error/);
   assert.match(source, /window\.__openExternalUrl=__openExternalUrl/);
   assert.match(source, /https\?:\\\/\+#\?/);
+  // Guard against patch regressions that delete the React vendor preamble.
+  assert.match(source, /var H0=\{exports:\{\}\}/);
 });
 
 test("index.html inlines bootstrap url guard", () => {
@@ -75,4 +77,13 @@ test("bundle falls through to ad preview when external open fails", () => {
     source,
     /if\(A&&A!=="#"\)\{__openExternalUrl\(A,"_blank"\);return\}s\?\.\(x\.id\)/
   );
+});
+
+test("top slider promo inventory opens advertise flow instead of ad preview", () => {
+  const source = fs.readFileSync(path.join(rootDir, "assets/index-DvXX5t7H.js"), "utf8");
+  assert.match(
+    source,
+    /ads:Bq,className:"home-top-slider",onTrack:\(m,E\)=>un\(m,E,"slider"\),onPreview:\(\)=>\{ba\(\)\}/
+  );
+  assert.match(source, /id:"promo-basic-5-starter"/);
 });
