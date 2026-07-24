@@ -4,14 +4,15 @@ Islam Media Central advertising app (AdvertApp).
 
 ## Invalid URL fix
 
-Mobile WebViews were crashing on startup when sponsor/logo links used `href="#"` together with `target="_blank"`. Browsers resolve that to an invalid URL like `https://#`, which makes `window.open` throw and trips the app's error boundary.
+Mobile WebViews were crashing when ad/sponsor links used placeholders like `#` or `https://#` with `target="_blank"` / `window.open`. Chromium reports that as `https:/#`, throws a `SyntaxError`, and the root error boundary replaced the whole app with “App failed to load”.
 
-This repo now guards external navigation in two places:
+This repo guards external navigation in three places:
 
-1. `url-guard.js` runs before the React bundle and blocks invalid `window.open` calls and blank-target clicks.
-2. `scripts/patch-bundle.mjs` patches the deployed bundle so link opens go through `__resolveExternalUrl`.
+1. `url-guard.js` runs before the React bundle, blocks invalid `window.open` calls and blank-target clicks, and swallows residual invalid-open errors.
+2. `scripts/patch-bundle.mjs` patches the deployed bundle so ad opens go through `__resolveExternalUrl`, and soft-fails the root error boundary for invalid-open errors.
+3. `src/utils/externalUrl.js` is the shared helper for future source builds.
 
-For future source builds, use `src/utils/externalUrl.js` anywhere a link may be `#` or empty.
+Also sanitize listing data so empty destinations are stored as `#` (or a real URL), never `https://#`.
 
 ## Deploy to Vercel
 
