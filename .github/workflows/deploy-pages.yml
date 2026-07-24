@@ -30,6 +30,8 @@ jobs:
           rm -rf site/public/node_modules 2>/dev/null || true
 
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
