@@ -13,10 +13,19 @@ This repo now guards external navigation in two places:
 
 For future source builds, use `src/utils/externalUrl.js` anywhere a link may be `#` or empty.
 
-## Deploy
+## Deploy to Vercel
 
-Static files in this repo are ready for Vercel. After changing the bundle, run:
+The live app at `traeadvert8pia.vercel.app` must be connected to this repository:
 
-```bash
-node scripts/patch-bundle.mjs
+1. Open [Vercel Dashboard](https://vercel.com/dashboard)
+2. Select the `traeadvert8pia` project (or import `huzaifahp1989/advert`)
+3. Set **Root Directory** to `.` and leave **Build Command** empty (static site)
+4. Deploy from the `main` branch
+
+After deploy, confirm `index.html` includes:
+
+```html
+<script src="/url-guard.js"></script>
 ```
+
+If you rebuild the JS bundle from source, run `npm run patch` before deploying.
