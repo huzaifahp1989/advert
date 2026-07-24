@@ -1,6 +1,9 @@
 {
   "version": 2,
   "routes": [
+    { "src": "/url-guard\\.js", "dest": "/url-guard.js" },
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/vite\\.svg", "dest": "/vite.svg" },
     { "handle": "filesystem" },
     {
       "src": "/(.*)",

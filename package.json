@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "dev": "npx --yes serve -s -l tcp://0.0.0.0:5173 .",
     "patch": "node scripts/patch-bundle.mjs && node scripts/patch-leaderboard.mjs",
-    "test:url": "node --test tests/externalUrl.test.js",
+    "test": "node --test tests/*.test.js",
+    "test:url": "node --test tests/externalUrl.test.js tests/urlGuard.runtime.test.js",
     "test:leaderboard": "node --test tests/leaderboard.test.js"
   }
 }
