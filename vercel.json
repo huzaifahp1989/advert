@@ -1,8 +1,10 @@
 {
-  "rewrites": [
+  "version": 2,
+  "routes": [
+    { "handle": "filesystem" },
     {
-      "source": "/((?!assets/|url-guard\\.js|vite\\.svg).*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
